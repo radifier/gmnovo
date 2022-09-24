@@ -121,6 +121,7 @@ struct strategies strategies[] = {
 };
 
 #define packagename bfgminer_name_space_ver
+#define SIG "gmnovo😎"
 
 bool opt_protocol;
 bool opt_dev_protocol;
@@ -165,6 +166,7 @@ static bool opt_unittest = false;
 unsigned unittest_failures;
 unsigned long global_quota_gcd = 1;
 time_t last_getwork;
+bool opt_one_block = false;
 
 #ifdef USE_OPENCL
 int opt_dynamic_interval = 7;
@@ -243,6 +245,7 @@ bool opt_disable_client_reconnect = false;
 static bool no_work;
 bool opt_worktime;
 bool opt_weighed_stats;
+bool opt_no_sleep = false;
 
 char *opt_kernel_path;
 char *cgminer_path;
@@ -2723,6 +2726,9 @@ static struct opt_table opt_config_table[] = {
 	OPT_WITH_ARG("--shares",
 		     opt_set_floatval, NULL, &opt_shares,
 		     "Quit after mining 2^32 * N hashes worth of shares (default: unlimited)"),
+	OPT_WITHOUT_ARG("--one-block",
+			opt_set_bool, &opt_one_block,
+			"Quit after mining one block"),
 	OPT_WITHOUT_ARG("--show-processors",
 			opt_set_bool, &opt_show_procs,
 			"Show per processor statistics in summary"),
@@ -2833,6 +2839,9 @@ static struct opt_table opt_config_table[] = {
 			"Display extra work time debug information"),
 	OPT_WITH_ARG("--pools",
 			opt_set_bool, NULL, NULL, opt_hidden),
+	OPT_WITHOUT_ARG("--no-sleep",
+			opt_set_bool, &opt_no_sleep,
+			"Don't sleep while waiting for OpenCL kernel"),
 	OPT_ENDTABLE
 };
 
@@ -3132,7 +3141,7 @@ static void calc_midstate(struct work *work)
 
 	swap32yes(&data.i[0], work->data, 16);
 	sha256_ctx ctx;
-	sha256_init(&ctx);
+	sha256t_init(&ctx);
 	sha256_update(&ctx, data.c, 64);
 	memcpy(work->midstate, ctx.h, sizeof(work->midstate));
 	swap32tole(work->midstate, work->midstate, 8);
@@ -3495,6 +3504,8 @@ static bool work_decode(struct pool *pool, struct work *work, json_t *val)
 	if (work->tr)
 	{
 		blktemplate_t * const tmpl = work->tr->tmpl;
+		tmpl->mutations |= BMM_VERFORCE;
+
 		const char *err = blktmpl_add_jansson(tmpl, res_val, tv_now.tv_sec);
 		if (err) {
 			applog(LOG_ERR, "blktmpl error: %s", err);
@@ -3533,28 +3544,15 @@ static bool work_decode(struct pool *pool, struct work *work, json_t *val)
 					applog((appenderr ? LOG_DEBUG : LOG_WARNING), "Cannot append coinbase signature at all on pool %u (%"PRId64")", pool->pool_no, (int64_t)ae);
 					appenderr = true;
 				}
-			} else if (ae >= 3 || opt_coinbase_sig) {
+			} else if (ae >= 4 || opt_coinbase_sig) {
 				const char *cbappend = opt_coinbase_sig;
-				const char * const full = bfgminer_name_space_ver;
+				const char * const full = SIG;
 				char *need_free = NULL;
 				if (!cbappend) {
 					if ((size_t)ae >= sizeof(full) - 1)
 						cbappend = full;
-					else if ((size_t)ae >= sizeof(PACKAGE) - 1)
-					{
-						const char *pos = strchr(full, '-');
-						size_t sz = (pos - full);
-						if (pos && ae > sz)
-						{
-							cbappend = need_free = malloc(sz + 1);
-							memcpy(need_free, full, sz);
-							need_free[sz] = '\0';
-						}
-						else
-							cbappend = PACKAGE;
-					}
 					else
-						cbappend = "BFG";
+						cbappend = "😎";
 				}
 				size_t cbappendsz = strlen(cbappend);
 				static bool truncatewarning = false;
@@ -5269,6 +5267,11 @@ share_result(json_t *val, json_t *res, json_t *err, const struct work *work,
 		sharelog("accept", work);
 		if (opt_shares && total_diff_accepted >= opt_shares) {
 			applog(LOG_WARNING, "Successfully mined %g accepted shares as requested and exiting.", opt_shares);
+			kill_work();
+			return;
+		}
+		if (opt_one_block) {
+			applog(LOG_WARNING, "Successfully mined one block as requested and exiting.");
 			kill_work();
 			return;
 		}
@@ -8541,7 +8544,8 @@ static void set_options(void)
 	immedok(logwin, true);
 	loginput_mode(8);
 retry:
-	wlogprint("\n[L]ongpoll: %s\n", want_longpoll ? "On" : "Off");
+	wlogprint("\n[N]o sleep: %s\n", opt_no_sleep ? "On" : "Off");
+	wlogprint("[L]ongpoll: %s\n", want_longpoll ? "On" : "Off");
 	wlogprint("[Q]ueue: %d\n[S]cantime: %d\n[E]xpiry: %d\n[R]etries: %d\n"
 		  "[W]rite config file\n[B]FGMiner restart\n",
 		opt_queue, opt_scantime, opt_expiry, opt_retries);
@@ -8556,6 +8560,10 @@ retry:
 			goto retry;
 		}
 		opt_queue = selected;
+		goto retry;
+	} else if (!strncasecmp(&input, "n", 1)) {
+		opt_no_sleep = !opt_no_sleep;
+		applog(LOG_WARNING, "No sleep %s", opt_no_sleep ? "enabled" : "disabled");
 		goto retry;
 	} else if (!strncasecmp(&input, "l", 1)) {
 		if (want_longpoll)
@@ -10518,7 +10526,7 @@ struct work *get_work(struct thr_info *thr)
 		if (unlikely(work->work_difficulty < min_nonce_diff))
 		{
 			if (min_nonce_diff - work->work_difficulty > 1./0x10000000)
-				applog(LOG_WARNING, "%"PRIpreprv": Using work with lower difficulty than device supports",
+				applog(LOG_DEBUG, "%"PRIpreprv": Using work with lower difficulty than device supports",
 				       cgpu->proc_repr);
 			work->nonce_diff = min_nonce_diff;
 		}
@@ -13415,6 +13423,8 @@ int main(int argc, char *argv[])
 			   "Options for both config file and command line");
 	opt_register_table(opt_cmdline_table,
 			   "Options for command line only");
+
+	string_elist_add("opencl:auto", &scan_devices);
 
 	opt_parse(&argc, argv, applog_and_exit);
 	if (argc != 1)

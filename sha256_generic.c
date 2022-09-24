@@ -229,8 +229,8 @@ static void runhash(void *state, const void *input, const void *init)
 }
 
 const uint32_t sha256_init_state[8] = {
-	0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
-	0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
+    0xdfa9bf2c, 0xb72074d4, 0x6bb01122, 0xd338e869,
+    0xaa3ff126, 0x475bbf30, 0x8fd52e5b, 0x9f75c9ad
 };
 
 /* suspiciously similar to ScanHash* from bitcoin */

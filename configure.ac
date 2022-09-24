@@ -13,9 +13,9 @@ dnl * any later version.  See COPYING for more details.
 
 ##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##
 ##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##
-m4_define([v_maj], [5])
-m4_define([v_min], [5])
-m4_define([v_mic], [0])
+m4_define([v_maj], [1])
+m4_define([v_min], [0])
+m4_define([v_mic], [1])
 ##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##
 m4_define([v_ver], [v_maj.v_min.v_mic])
 m4_define([lt_rev], m4_eval(v_maj + v_min))
@@ -24,7 +24,7 @@ m4_define([lt_age], v_min)
 ##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##
 ##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##
 
-AC_INIT([bfgminer], [v_ver], [luke-jr+bfgminer@utopios.org])
+AC_INIT([gmnovo], [v_ver], [])
 
 AC_PREREQ([2.59c])
 AC_CANONICAL_SYSTEM
@@ -429,7 +429,7 @@ BFG_DRIVER(cpumining,CPU mining,,no,[
 ])
 driverlist=`echo "${driverlist}" | ${SED} -e 's/ cpumining/ cpu/'`
 
-BFG_DRIVER(,OpenCL,,no)
+BFG_DRIVER(,OpenCL,,yes)
 
 m4_define([BFG_PTHREAD_FLAG_CHECK],
 	AC_MSG_CHECKING([for $1])
@@ -559,7 +559,7 @@ BFG_DRIVER(,AlcheMist,scrypt,no,[
 	has_asic=yes
 ])
 
-BFG_DRIVER(,BitForce,SHA256d,auto,[
+BFG_DRIVER(,BitForce,SHA256d,no,[
 	driverlist="$driverlist bitforce:pci/need_lowl_pci"
 	if test "x$lowl_pci" = "xyes"; then
 		need_lowl_pci=yes
@@ -579,7 +579,7 @@ BFG_DRIVER(bitmain,Bitmain Antminer S* series,SHA256d,no,[
 	has_asic=yes
 ])
 
-BFG_DRIVER(,Icarus,SHA256d,auto,[
+BFG_DRIVER(,Icarus,SHA256d,no,[
 	need_dynclock=yes
 	need_lowl_vcom=yes
 	has_fpga=yes
@@ -588,31 +588,31 @@ BFG_DRIVER(,Icarus,SHA256d,auto,[
 ])
 driverlist="$driverlist cairnsmore/USE_ICARUS erupter/USE_ICARUS antminer/USE_ICARUS compac/USE_ICARUS"
 
-BFG_DRIVER(,DualMiner,Icarus,auto,[
+BFG_DRIVER(,DualMiner,Icarus,no,[
 	need_gc3355=yes
 	$broad_udevrules && have_udevrules=true
 ])
 
-BFG_DRIVER(,ZeusMiner,scrypt Icarus,auto,[
+BFG_DRIVER(,ZeusMiner,scrypt Icarus,no,[
 	need_lowl_vcom=yes
 	has_asic=yes
 	$broad_udevrules && have_udevrules=true
 ])
 
-BFG_DRIVER(,GridSeed,scrypt,auto,[
+BFG_DRIVER(,GridSeed,scrypt,no,[
 	need_gc3355=yes
 	need_lowl_vcom=yes
 	has_asic=yes
 	$broad_udevrules && have_udevrules=true
 ])
 
-BFG_DRIVER(,Avalon,SHA256d,auto,[
+BFG_DRIVER(,Avalon,SHA256d,no,[
 	need_lowl_vcom=yes
 	has_asic=yes
 	$broad_udevrules && have_udevrules=true
 ])
 
-BFG_DRIVER(avalonmm,Avalon2/3,SHA256d,auto,[
+BFG_DRIVER(avalonmm,Avalon2/3,SHA256d,no,[
 	need_lowl_vcom=yes
 	need_work2d=yes
 	has_asic=yes
@@ -704,7 +704,7 @@ else
 fi
 AM_CONDITIONAL([NEED_BFG_DRIVER_PROXY], [test x$libevent$httpsrv != xnono])
 
-BFG_DRIVER(,ModMiner,SHA256d,auto,[
+BFG_DRIVER(,ModMiner,SHA256d,no,[
 	need_dynclock=yes
 	need_lowl_vcom=yes
 	need_binloader=yes
@@ -748,13 +748,13 @@ PKG_CHECK_MODULES([LIBUSB], [libusb-1.0],[
 ])
 fi
 
-BFG_DRIVER(,CoinTerra,SHA256d libusb,auto,[
+BFG_DRIVER(,CoinTerra,SHA256d libusb,no,[
 	need_lowl_usb=yes
 	has_asic=yes
 	have_udevrules=true
 ])
 
-BFG_DRIVER(,Klondike,SHA256d libusb,auto,[
+BFG_DRIVER(,Klondike,SHA256d libusb,no,[
 	need_lowl_usb=yes
 	has_asic=yes
 	have_udevrules=true
@@ -782,7 +782,7 @@ BFG_DRIVER(titan,KnC Titan,scrypt,no,[
 	AH_TEMPLATE([CONTROLLER_BOARD_RPI])
 ])
 
-BFG_DRIVER(,X6500,SHA256d libusb,auto,[
+BFG_DRIVER(,X6500,SHA256d libusb,no,[
 	need_dynclock=yes
 	need_lowl_ftdi=yes
 	need_binloader=yes
@@ -790,7 +790,7 @@ BFG_DRIVER(,X6500,SHA256d libusb,auto,[
 	have_udevrules=true
 ])
 
-BFG_DRIVER(,ZTEX,SHA256d libusb,auto,[
+BFG_DRIVER(,ZTEX,SHA256d libusb,no,[
 	need_dynclock=yes
 	need_lowl_usb=yes
 	need_binloader=yes
@@ -798,43 +798,43 @@ BFG_DRIVER(,ZTEX,SHA256d libusb,auto,[
 	have_udevrules=true
 ])
 
-BFG_DRIVER(bifury,Bi*Fury,SHA256d,auto,[
+BFG_DRIVER(bifury,Bi*Fury,SHA256d,no,[
 	need_lowl_vcom=yes
 	has_asic=yes
 	have_udevrules=true
 ])
 
-BFG_DRIVER(,Bitfury,SHA256d,auto,[
+BFG_DRIVER(,Bitfury,SHA256d,no,[
 	need_lowl_spi=yes
 ])
 
 BFG_DRIVER(,BFSB,SHA256d Bitfury,no)
 
-BFG_DRIVER(bigpic,Big Picture Mining USB,SHA256d Bitfury,auto,[
+BFG_DRIVER(bigpic,Big Picture Mining USB,SHA256d Bitfury,no,[
 	need_lowl_vcom=yes
 	has_asic=yes
 	have_udevrules=true
 ])
 
-BFG_DRIVER(bfx,BFx2,SHA256d libusb Bitfury,auto,[
+BFG_DRIVER(bfx,BFx2,SHA256d libusb Bitfury,no,[
 	need_lowl_ftdi=yes
 	has_asic=yes
 	$broad_udevrules && have_udevrules=true
 ])
 
-BFG_DRIVER(,DrillBit,SHA256d Bitfury,auto,[
+BFG_DRIVER(,DrillBit,SHA256d Bitfury,no,[
 	need_lowl_vcom=yes
 	has_asic=yes
 	have_udevrules=true
 ])
 
-BFG_DRIVER(,Twinfury,SHA256d Bitfury,auto,[
+BFG_DRIVER(,Twinfury,SHA256d Bitfury,no,[
     need_lowl_vcom=yes
     has_asic=yes
 	have_udevrules=true
 ])
 
-BFG_DRIVER(,LittleFury,SHA256d Bitfury,auto,[
+BFG_DRIVER(,LittleFury,SHA256d Bitfury,no,[
 	need_lowl_vcom=yes
 	has_asic=yes
 	have_udevrules=true
@@ -854,25 +854,25 @@ for _hidapi_lib in hidapi hidapi-hidraw hidapi-libusb; do
 done
 
 
-BFG_DRIVER(,NanoFury,SHA256d hidapi Bitfury,auto,[
+BFG_DRIVER(,NanoFury,SHA256d hidapi Bitfury,no,[
 	need_lowl_hid=yes
 	has_asic=yes
 	have_udevrules=true
 ])
 
-BFG_DRIVER(hashbuster,HashBuster Nano,SHA256d hidapi Bitfury,auto,[
+BFG_DRIVER(hashbuster,HashBuster Nano,SHA256d hidapi Bitfury,no,[
 	need_lowl_hid=yes
 	has_asic=yes
 	have_udevrules=true
 ])
 
-BFG_DRIVER(hashbusterusb,HashBuster Micro,SHA256d libusb Bitfury,auto,[
+BFG_DRIVER(hashbusterusb,HashBuster Micro,SHA256d libusb Bitfury,no,[
 	need_lowl_usb=yes
 	has_asic=yes
 	have_udevrules=true
 ])
 
-BFG_DRIVER(,HashFast,SHA256d,auto,[
+BFG_DRIVER(,HashFast,SHA256d,no,[
 	need_lowl_vcom=yes
 	has_asic=yes
 	have_udevrules=true
@@ -895,7 +895,7 @@ BFG_DRIVER(,Minion,SHA256d,no,[
 	has_asic=yes
 ])
 
-BFG_DRIVER(,RockMiner,SHA256d,auto,[
+BFG_DRIVER(,RockMiner,SHA256d,no,[
 	need_lowl_vcom=yes
 	has_asic=yes
 	have_udevrules=true
